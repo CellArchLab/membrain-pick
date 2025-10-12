@@ -59,8 +59,9 @@ This command will generate mesh representations of the membrane segmentations an
 - `--out-folder` (TEXT): Path to the folder where mesh projections should be stored. [default: ./mesh_data] 
 - `--step-numbers` (INTEGER): Step numbers for the normal vectors. [default: (-10, 10)] 
 - `--step-size` (FLOAT): Step size for the normal vectors. [default: 2.5] 
-- `--mesh-smoothing` (INTEGER): Smoothing factor for the mesh. [default: 1000] 
-- `--barycentric-area` (FLOAT): Barycentric area for the mesh. [default: 400.0] 
+- `--mesh-smoothing` (INTEGER): Smoothing factor for the mesh. [default: 1000]
+- `--barycentric-area` (FLOAT): Barycentric area for the mesh. [default: 400.0]
+- `--max-segmentations` (INTEGER): Maximum number of connected segmentations to convert per file. Use `None` to export all components. [default: None]
 
 Note: options may change faster than these docs. You can check the available options by running `membrain_pick convert_mb_folder`.
 
@@ -76,7 +77,9 @@ This command will generate a mesh representation of the membrane segmentation an
 
 #### More Options
 
-Other options are similar to the `convert_mb_folder` command. You can check the available options by running `membrain-pick convert_file`.
+Other options mirror the `convert_mb_folder` command, including `--max-segmentations`
+to control how many connected segmentations are exported per membrane file. You can
+check the available options by running `membrain-pick convert_file`.
 
 
 ### Outputs
