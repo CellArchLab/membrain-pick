@@ -3,7 +3,7 @@
 import typer
 from click import Context
 from typer.core import TyperGroup
-from typing import List
+from typing import List, Optional
 from typer import Option
 
 
@@ -82,6 +82,13 @@ def convert_single_file(
         False,
         help="Should the mesh be generated using IMOD? WARNING: This is highly experimental.",
     ),
+    max_segmentations: Optional[int] = Option(  # noqa: B008
+        None,
+        help=(
+            "Maximum number of connected segmentations to convert to meshes. "
+            "Leave empty or set to None to export all available segmentations."
+        ),
+    ),
 ):
     """Convert a single membrane segmentation to a mesh.
 
@@ -103,6 +110,7 @@ def convert_single_file(
         barycentric_area=barycentric_area,
         input_pixel_size=input_pixel_size,
         imod_meshing=imod_meshing,
+        max_segmentations=max_segmentations,
     )
 
 
@@ -139,6 +147,13 @@ def convert_mb_folder(
         False,
         help="Should the mesh be generated using IMOD? WARNING: This is highly experimental.",
     ),
+    max_segmentations: Optional[int] = Option(  # noqa: B008
+        None,
+        help=(
+            "Maximum number of connected segmentations to convert to meshes. "
+            "Leave empty or set to None to export all available segmentations."
+        ),
+    ),
 ):
     """Convert a folder of membrane segmentations to meshes.
 
@@ -158,6 +173,7 @@ def convert_mb_folder(
         barycentric_area=barycentric_area,
         input_pixel_size=input_pixel_size,
         imod_meshing=imod_meshing,
+        max_segmentations=max_segmentations,
     )
 
 

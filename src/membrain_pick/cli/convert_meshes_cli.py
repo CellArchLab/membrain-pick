@@ -1,5 +1,5 @@
 import os
-from typing import List
+from typing import List, Optional
 
 from typer import Option
 from .cli import OPTION_PROMPT_KWARGS as PKWARGS
@@ -45,6 +45,13 @@ def convert_single_file(
         False,
         help="Should the mesh be generated using PyMeshLab? WARNING: This is highly experimental.",
     ),
+    max_segmentations: Optional[int] = Option(  # noqa: B008
+        None,
+        help=(
+            "Maximum number of connected segmentations to convert to meshes. "
+            "Leave empty or set to None to export all available segmentations."
+        ),
+    ),
 ):
     """Convert a single membrane segmentation to a mesh.
 
@@ -69,6 +76,7 @@ def convert_single_file(
         input_pixel_size=input_pixel_size,
         imod_meshing=imod_meshing,
         pymeshlab_meshing=pymeshlab_meshing,
+        max_segmentations=max_segmentations,
     )
 
 
@@ -109,6 +117,13 @@ def convert_mb_folder(
         False,
         help="Should the mesh be generated using PyMeshLab? WARNING: This is highly experimental.",
     ),
+    max_segmentations: Optional[int] = Option(  # noqa: B008
+        None,
+        help=(
+            "Maximum number of connected segmentations to convert to meshes. "
+            "Leave empty or set to None to export all available segmentations."
+        ),
+    ),
 ):
     """Convert a folder of membrane segmentations to meshes.
 
@@ -131,4 +146,5 @@ def convert_mb_folder(
         input_pixel_size=input_pixel_size,
         imod_meshing=imod_meshing,
         pymeshlab_meshing=pymeshlab_meshing,
+        max_segmentations=max_segmentations,
     )

@@ -1,4 +1,6 @@
 import os
+from typing import Optional
+
 import numpy as np
 
 from membrain_seg.segmentation.dataloading.data_utils import load_tomogram
@@ -20,6 +22,7 @@ def meshes_for_folder_structure(
     min_connected_size=1e4,
     imod_meshing=False,
     pymeshlab_meshing=False,
+    max_segmentations: Optional[int] = None,
 ):
     """
     This assumes the following folder structure:
@@ -110,6 +113,7 @@ def meshes_for_folder_structure(
             min_connected_size=min_connected_size,
             imod_meshing=imod_meshing,
             pymeshlab_meshing=pymeshlab_meshing,
+            max_segmentations=max_segmentations,
         )
 
 
@@ -130,6 +134,7 @@ def mesh_for_tomo_mb_folder(
     min_connected_size=1e4,
     imod_meshing=False,
     pymeshlab_meshing=False,
+    max_segmentations: Optional[int] = None,
 ):
     """
     This function assumes the following folder structure:
@@ -188,6 +193,7 @@ def mesh_for_tomo_mb_folder(
             min_connected_size=min_connected_size,
             imod_meshing=imod_meshing,
             pymeshlab_meshing=pymeshlab_meshing,
+            max_segmentations=max_segmentations,
         )
 
 
@@ -208,6 +214,7 @@ def mesh_for_single_mb_file(
     min_connected_size=1e4,
     imod_meshing=False,
     pymeshlab_meshing=False,
+    max_segmentations: Optional[int] = None,
 ):
     """ """
     os.makedirs(out_folder, exist_ok=True)
@@ -224,6 +231,8 @@ def mesh_for_single_mb_file(
     if tomo_token is None:
         tomo_token = "Tomo"
 
+    # Allow exporting multiple connected components when requested.
+    multiple_components_requested = max_segmentations is None or max_segmentations > 1
     convert_to_mesh(
         mb_file,
         tomo_file,
@@ -237,8 +246,10 @@ def mesh_for_single_mb_file(
         barycentric_area=barycentric_area,
         input_pixel_size=input_pixel_size,
         crop_box_flag=crop_box_flag,
-        only_largest_component=only_largest_component,
+        only_largest_component=
+        only_largest_component and not multiple_components_requested,
         min_connected_size=min_connected_size,
         imod_meshing=imod_meshing,
         pymeshlab_meshing=pymeshlab_meshing,
+        max_segmentations=max_segmentations,
     )

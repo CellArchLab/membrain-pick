@@ -1,4 +1,6 @@
 import os
+from typing import Optional
+
 import numpy as np
 from scipy.ndimage import zoom
 
@@ -172,6 +174,7 @@ def convert_to_mesh(
     min_connected_size: float = 1e4,
     imod_meshing: bool = False,
     pymeshlab_meshing: bool = False,
+    max_segmentations: Optional[int] = None,
 ) -> None:
     """
     Converts segmentation data into a mesh format and stores it.
@@ -208,6 +211,9 @@ def convert_to_mesh(
         Flag to process only the largest connected component.
     min_connected_size : float, optional
         Minimum size for connected components to be processed.
+    max_segmentations : int, optional
+        Maximum number of connected components to export. ``None`` exports all
+        available components.
 
     Returns
     -------
@@ -220,10 +226,22 @@ def convert_to_mesh(
         mb_file, only_largest_component, tomo_file, tomo, rescale_seg
     )
 
+    component_sizes = np.bincount(seg.reshape(-1))
+    component_labels = [
+        label
+        for label in range(1, len(component_sizes))
+        if component_sizes[label] >= min_connected_size
+    ]
+    component_labels.sort(key=lambda label: component_sizes[label], reverse=True)
+
+    if only_largest_component and component_labels:
+        component_labels = component_labels[:1]
+    if max_segmentations is not None:
+        component_labels = component_labels[:max(0, max_segmentations)]
+
     sub_seg_count = 0
-    for k in range(1, seg.max() + 1):
-        if np.sum(seg == k) < min_connected_size:
-            continue
+    normal_values = None
+    for k in component_labels:
         cur_mb_key, sub_seg_count = get_cur_mb_key(
             mb_key, only_largest_component, k, sub_seg_count, seg
         )
