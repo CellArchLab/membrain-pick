@@ -37,6 +37,13 @@ def convert_single_file(
     barycentric_area: float = Option(  # noqa: B008
         400.0, help="Barycentric area for the mesh. Default: 1.0"
     ),
+    min_segmentation_size: int = Option(  # noqa: B008
+        10000,
+        help=(
+            "Export all connected components whose voxel count is greater than or "
+            "equal to this threshold."
+        ),
+    ),
     imod_meshing: bool = Option(  # noqa: B008
         False,
         help="Should the mesh be generated using IMOD? WARNING: This is highly experimental.",
@@ -81,6 +88,7 @@ def convert_single_file(
         mesh_smoothing=mesh_smoothing,
         barycentric_area=barycentric_area,
         input_pixel_size=input_pixel_size,
+        min_connected_size=min_segmentation_size,
         imod_meshing=imod_meshing,
         pymeshlab_meshing=pymeshlab_meshing,
         max_segmentations=max_segmentations,
@@ -116,6 +124,13 @@ def convert_mb_folder(
     ),
     barycentric_area: float = Option(  # noqa: B008
         400.0, help="Barycentric area for the mesh. Default: 1.0"
+    ),
+    min_segmentation_size: int = Option(  # noqa: B008
+        10000,
+        help=(
+            "Export all connected components whose voxel count is greater than or "
+            "equal to this threshold."
+        ),
     ),
     imod_meshing: bool = Option(  # noqa: B008
         False,
@@ -159,6 +174,7 @@ def convert_mb_folder(
         mesh_smoothing=mesh_smoothing,
         barycentric_area=barycentric_area,
         input_pixel_size=input_pixel_size,
+        min_connected_size=min_segmentation_size,
         imod_meshing=imod_meshing,
         pymeshlab_meshing=pymeshlab_meshing,
         max_segmentations=max_segmentations,
