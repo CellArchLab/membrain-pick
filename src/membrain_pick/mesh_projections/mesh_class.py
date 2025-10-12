@@ -1,7 +1,8 @@
+import csv
+from typing import Optional
+
 import numpy as np
 from sklearn.neighbors import NearestNeighbors
-import csv
-
 
 
 class Mesh(object):
@@ -57,15 +58,27 @@ class Mesh(object):
         dists = self.nn_entity.kneighbors(positions)
         return dists
 
-    def store_in_file(self, out_file):
-        with open(out_file, 'w') as out_csv:
-            csv_writer = csv.writer(out_csv, delimiter=' ')
+    def store_in_file(
+        self,
+        out_file,
+        append: bool = False,
+        vertex_offset: int = 0,
+        object_name: Optional[str] = None,
+    ):
+        mode = "a" if append else "w"
+        with open(out_file, mode) as out_csv:
+            if object_name is not None:
+                out_csv.write(f"o {object_name}\n")
+
             for vert in self.vertices:
-                row = ['v', str(vert[0]), str(vert[1]), str(vert[2])]
-                csv_writer.writerow(row)
-            for combo in self.triangle_combos:
-                row = ['f', str(int(combo[0])), str(int(combo[1])), str(int(combo[2]))]
-                csv_writer.writerow(row)
+                out_csv.write(f"v {vert[0]} {vert[1]} {vert[2]}\n")
+
+            combos = np.asarray(self.triangle_combos, dtype=int)
+            if append and vertex_offset:
+                combos = combos + int(vertex_offset)
+
+            for combo in combos:
+                out_csv.write(f"f {int(combo[0])} {int(combo[1])} {int(combo[2])}\n")
             
 
 

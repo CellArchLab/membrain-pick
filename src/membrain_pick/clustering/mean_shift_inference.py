@@ -1,5 +1,6 @@
 from membrain_pick.dataloading.data_utils import (
     get_csv_data,
+    iter_mesh_entries,
     store_array_in_star,
     load_mesh_from_hdf5,
     store_mesh_in_hdf5,
@@ -58,22 +59,40 @@ def mean_shift_for_h5(
     method: str = "membrain_pick",
     score_threshold: float = 9.0,
 ):
-    mesh_data = load_mesh_from_hdf5(h5_file)
-    verts = mesh_data["points"]
-    scores = mesh_data["scores"]
-    out_pos, _ = mean_shift_for_scores(
-        verts, scores, bandwidth, max_iter, margin, device, score_threshold, method
-    )
-    # add positions to h5 container
-    mesh_data["cluster_centers"] = out_pos
-    out_file = os.path.join(out_dir, os.path.basename(h5_file))
+    mesh_entries = list(iter_mesh_entries(load_mesh_from_hdf5(h5_file)))
     os.makedirs(out_dir, exist_ok=True)
-    store_mesh_in_hdf5(
-        out_file,
-        **mesh_data,
-    )
+    out_file = os.path.join(out_dir, os.path.basename(h5_file))
+    if os.path.exists(out_file):
+        os.remove(out_file)
 
-    store_clusters(h5_file, out_dir, out_pos, np.zeros((0,)), verts, mesh_data["faces"])
+    for group_name, mesh_data in mesh_entries:
+        verts = mesh_data["points"]
+        scores = mesh_data["scores"]
+        out_pos, _ = mean_shift_for_scores(
+            verts, scores, bandwidth, max_iter, margin, device, score_threshold, method
+        )
+        mesh_data = dict(mesh_data)
+        mesh_data["cluster_centers"] = out_pos
+
+        store_mesh_in_hdf5(
+            out_file,
+            group_name=group_name,
+            **mesh_data,
+        )
+
+        group_file = h5_file
+        if group_name is not None:
+            base, ext = os.path.splitext(h5_file)
+            group_file = f"{base}_{group_name}{ext}"
+
+        store_clusters(
+            group_file,
+            out_dir,
+            out_pos,
+            np.zeros((0,)),
+            verts,
+            mesh_data["faces"],
+        )
 
 
 def mean_shift_for_csv(

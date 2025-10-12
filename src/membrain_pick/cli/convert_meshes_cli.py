@@ -1,5 +1,5 @@
 import os
-from typing import List
+from typing import List, Optional
 
 from typer import Option
 from .cli import OPTION_PROMPT_KWARGS as PKWARGS
@@ -37,6 +37,13 @@ def convert_single_file(
     barycentric_area: float = Option(  # noqa: B008
         400.0, help="Barycentric area for the mesh. Default: 1.0"
     ),
+    min_segmentation_size: int = Option(  # noqa: B008
+        10000,
+        help=(
+            "Export all connected components whose voxel count is greater than or "
+            "equal to this threshold."
+        ),
+    ),
     imod_meshing: bool = Option(  # noqa: B008
         False,
         help="Should the mesh be generated using IMOD? WARNING: This is highly experimental.",
@@ -44,6 +51,20 @@ def convert_single_file(
     pymeshlab_meshing: bool = Option(  # noqa: B008
         False,
         help="Should the mesh be generated using PyMeshLab? WARNING: This is highly experimental.",
+    ),
+    max_segmentations: Optional[int] = Option(  # noqa: B008
+        None,
+        help=(
+            "Maximum number of connected segmentations to convert to meshes. "
+            "Leave empty or set to None to export all available segmentations."
+        ),
+    ),
+    merge_outputs: bool = Option(  # noqa: B008
+        False,
+        help=(
+            "Store all exported connected components in a single set of output "
+            "files (one H5/OBJ pair)."
+        ),
     ),
 ):
     """Convert a single membrane segmentation to a mesh.
@@ -67,8 +88,11 @@ def convert_single_file(
         mesh_smoothing=mesh_smoothing,
         barycentric_area=barycentric_area,
         input_pixel_size=input_pixel_size,
+        min_connected_size=min_segmentation_size,
         imod_meshing=imod_meshing,
         pymeshlab_meshing=pymeshlab_meshing,
+        max_segmentations=max_segmentations,
+        merge_outputs=merge_outputs,
     )
 
 
@@ -101,6 +125,13 @@ def convert_mb_folder(
     barycentric_area: float = Option(  # noqa: B008
         400.0, help="Barycentric area for the mesh. Default: 1.0"
     ),
+    min_segmentation_size: int = Option(  # noqa: B008
+        10000,
+        help=(
+            "Export all connected components whose voxel count is greater than or "
+            "equal to this threshold."
+        ),
+    ),
     imod_meshing: bool = Option(  # noqa: B008
         False,
         help="Should the mesh be generated using IMOD? WARNING: This is highly experimental.",
@@ -108,6 +139,20 @@ def convert_mb_folder(
     pymeshlab_meshing: bool = Option(  # noqa: B008
         False,
         help="Should the mesh be generated using PyMeshLab? WARNING: This is highly experimental.",
+    ),
+    max_segmentations: Optional[int] = Option(  # noqa: B008
+        None,
+        help=(
+            "Maximum number of connected segmentations to convert to meshes. "
+            "Leave empty or set to None to export all available segmentations."
+        ),
+    ),
+    merge_outputs: bool = Option(  # noqa: B008
+        False,
+        help=(
+            "Store all exported connected components in a single set of output "
+            "files (one H5/OBJ pair) per segmentation."
+        ),
     ),
 ):
     """Convert a folder of membrane segmentations to meshes.
@@ -129,6 +174,9 @@ def convert_mb_folder(
         mesh_smoothing=mesh_smoothing,
         barycentric_area=barycentric_area,
         input_pixel_size=input_pixel_size,
+        min_connected_size=min_segmentation_size,
         imod_meshing=imod_meshing,
         pymeshlab_meshing=pymeshlab_meshing,
+        max_segmentations=max_segmentations,
+        merge_outputs=merge_outputs,
     )

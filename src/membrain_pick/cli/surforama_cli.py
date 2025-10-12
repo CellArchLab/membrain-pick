@@ -33,7 +33,10 @@ def surforama(
     """
     import os
     import napari
-    from membrain_pick.dataloading.data_utils import load_mesh_from_hdf5
+    from membrain_pick.dataloading.data_utils import (
+        iter_mesh_entries,
+        load_mesh_from_hdf5,
+    )
     from membrain_pick.napari_utils.surforama_cli_utils import (
         display_tomo,
         get_pixel_size,
@@ -57,17 +60,21 @@ def surforama(
     else:
         mesh_files = [h5_path]
 
-    for h5_nr, h5_path in enumerate(mesh_files):
+    mesh_entries = []
+    for h5_path in mesh_files:
         mesh_data = load_mesh_from_hdf5(h5_path)
+        for group_name, group_data in iter_mesh_entries(mesh_data):
+            mesh_entries.append((h5_path, group_name, group_data))
 
-        if h5_nr == 0:
+    for entry_idx, (h5_path, _group_name, mesh_data) in enumerate(mesh_entries):
+        if entry_idx == 0:
             volume_layer = display_tomo(viewer, mesh_data, tomogram_path)
             pixel_size = get_pixel_size(mesh_data, None)
 
         points, faces = get_points_and_faces(mesh_data, pixel_size)
         display_scores(viewer, mesh_data, points, faces)
 
-        if h5_nr == 0:
+        if entry_idx == 0:
             surforama_widget = initialize_surforama_widget(
                 points, faces, volume_layer, viewer, normal_offset=normal_offset
             )
@@ -82,7 +89,7 @@ def surforama(
                 viewer, mesh_data, pixel_size, point_size=point_size
             )
 
-        if h5_nr == 0:
+        if entry_idx == 0:
             display_input_normal_values(viewer, mesh_data, points, faces)
     if return_viewer:
         return viewer
