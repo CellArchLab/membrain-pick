@@ -105,6 +105,15 @@ def get_cur_mb_key(mb_key, only_largest_component, k, sub_seg_count, seg):
     return cur_mb_key, sub_seg_count
 
 
+def _count_vertices_in_obj(obj_path: str) -> int:
+    vertex_count = 0
+    with open(obj_path, "r") as obj_file:
+        for line in obj_file:
+            if line.startswith("v "):
+                vertex_count += 1
+    return vertex_count
+
+
 def save_mesh_data(
     out_file_base: str,
     points: np.ndarray,
@@ -114,6 +123,8 @@ def save_mesh_data(
     only_obj: bool,
     tomo_file: str = None,
     pixel_size: float = None,
+    merge_outputs: bool = False,
+    component_name: Optional[str] = None,
 ) -> None:
     """
     Save the mesh data to files.
@@ -140,19 +151,33 @@ def save_mesh_data(
     None
     """
 
+    h5_path = out_file_base + ".h5"
+    obj_path = out_file_base + ".obj"
+
     if not only_obj:
         store_mesh_in_hdf5(
-            out_file=out_file_base + ".h5",
+            out_file=h5_path,
             points=points,
             faces=faces,
             normals=point_normals,
             normal_values=normal_values,
-            tomo_file=os.path.abspath(tomo_file),
+            tomo_file=os.path.abspath(tomo_file) if tomo_file is not None else None,
             pixel_size=pixel_size,
+            group_name=component_name if merge_outputs else None,
         )
 
     mesh = Mesh(points, faces + 1)
-    mesh.store_in_file(out_file_base + ".obj")
+    if merge_outputs:
+        append = os.path.exists(obj_path)
+        vertex_offset = _count_vertices_in_obj(obj_path) if append else 0
+        mesh.store_in_file(
+            obj_path,
+            append=append,
+            vertex_offset=vertex_offset,
+            object_name=component_name,
+        )
+    else:
+        mesh.store_in_file(obj_path)
 
     # precompute spectrals and partitioning
 
@@ -175,6 +200,7 @@ def convert_to_mesh(
     imod_meshing: bool = False,
     pymeshlab_meshing: bool = False,
     max_segmentations: Optional[int] = None,
+    merge_outputs: bool = False,
 ) -> None:
     """
     Converts segmentation data into a mesh format and stores it.
@@ -214,6 +240,11 @@ def convert_to_mesh(
     max_segmentations : int, optional
         Maximum number of connected components to export. ``None`` exports all
         available components.
+    merge_outputs : bool, optional
+        When ``True``, store all exported components in a single pair of output
+        files by grouping meshes inside the HDF5 container and appending them to
+        the OBJ file. Each component will be written under a dedicated group or
+        object name.
 
     Returns
     -------
@@ -277,8 +308,15 @@ def convert_to_mesh(
                 verts=points,
                 normals=point_normals,
             )
+        if merge_outputs:
+            out_file_base = os.path.join(out_folder, token + "_" + mb_key)
+            component_name = cur_mb_key
+        else:
+            out_file_base = os.path.join(out_folder, token + "_" + cur_mb_key)
+            component_name = None
+
         save_mesh_data(
-            out_file_base=os.path.join(out_folder, token + "_" + cur_mb_key),
+            out_file_base=out_file_base,
             points=points,
             faces=faces,
             point_normals=point_normals,
@@ -286,4 +324,6 @@ def convert_to_mesh(
             only_obj=only_obj,
             tomo_file=tomo_file,
             pixel_size=1.0,  # points dimension corresponds already to tomogram dimensions
+            merge_outputs=merge_outputs,
+            component_name=component_name,
         )

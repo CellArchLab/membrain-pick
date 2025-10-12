@@ -1,4 +1,6 @@
 import lxml.etree as ET
+from typing import Optional
+
 import pandas as pd
 import numpy as np
 import vtk
@@ -158,12 +160,20 @@ def store_array_in_npy(out_file, data):
     np.save(out_file, data)
 
 
-def store_mesh_in_hdf5(out_file: str, points: np.ndarray, faces: np.ndarray, **kwargs):
+def store_mesh_in_hdf5(
+    out_file: str,
+    points: np.ndarray,
+    faces: np.ndarray,
+    group_name: Optional[str] = None,
+    **kwargs,
+):
     """
     Store mesh data in an HDF5 file.
 
     The points and vertices will be stored in separate hdf5 datasets.
-    Each kwargs key will be stored as a separate dataset.
+    Each kwargs key will be stored as a separate dataset. When ``group_name`` is
+    provided, the datasets are created inside that group, allowing multiple
+    meshes to share the same container.
 
     Parameters
     ----------
@@ -173,6 +183,9 @@ def store_mesh_in_hdf5(out_file: str, points: np.ndarray, faces: np.ndarray, **k
         The points data.
     faces : np.ndarray
         The faces data.
+    group_name : str, optional
+        Name of the group in which to place the datasets. If ``None`` (the
+        default) the datasets are written directly at the root of the file.
     kwargs : dict
         Additional data to store in the HDF5 file.
 
@@ -181,20 +194,27 @@ def store_mesh_in_hdf5(out_file: str, points: np.ndarray, faces: np.ndarray, **k
     None
     """
 
-    with h5py.File(out_file, "w") as f:
-        f.create_dataset("points", data=points)
-        f.create_dataset("faces", data=faces)
+    mode = "a" if group_name is not None else "w"
+    with h5py.File(out_file, mode) as f:
+        target = f
+        if group_name is not None:
+            if group_name in f:
+                del f[group_name]
+            target = f.create_group(group_name)
+
+        target.create_dataset("points", data=points)
+        target.create_dataset("faces", data=faces)
         for key, value in kwargs.items():
             if value is not None:
                 if isinstance(value, str):
                     # Convert string to numpy array of variable-length UTF-8 strings
                     dt = h5py.string_dtype(encoding="utf-8")
-                    f.create_dataset(key, data=np.array(value, dtype=dt))
+                    target.create_dataset(key, data=np.array(value, dtype=dt))
                 else:
-                    f.create_dataset(key, data=value)
+                    target.create_dataset(key, data=value)
 
 
-def load_mesh_from_hdf5(in_file: str):
+def load_mesh_from_hdf5(in_file: str, group_name: Optional[str] = None):
     """
     Load mesh data from an HDF5 file.
 
@@ -202,17 +222,74 @@ def load_mesh_from_hdf5(in_file: str):
     ----------
     in_file : str
         The path to the input HDF5 file.
+    group_name : str, optional
+        Name of a group to load from the file. When ``None`` the function
+        returns the datasets stored at the root of the file. If the file
+        contains only groups, a dictionary mapping each group name to its
+        datasets is returned.
 
     Returns
     -------
     dict
-        A dictionary containing the mesh data.
+        A dictionary containing the mesh data. When ``group_name`` is ``None``
+        and the file stores multiple groups, a dictionary of dictionaries is
+        returned where each key corresponds to a group name.
     """
     mesh_data = {}
     with h5py.File(in_file, "r") as f:
-        for key in f.keys():
-            mesh_data[key] = f[key][()]
+        if group_name is not None:
+            if group_name not in f:
+                raise KeyError(
+                    f"Group '{group_name}' not found in '{in_file}'. Available keys: {list(f.keys())}"
+                )
+            node = f[group_name]
+            for key in node.keys():
+                mesh_data[key] = node[key][()]
+            return mesh_data
+
+        datasets = [key for key in f.keys() if isinstance(f[key], h5py.Dataset)]
+        groups = [key for key in f.keys() if isinstance(f[key], h5py.Group)]
+
+        if datasets:
+            for key in datasets:
+                mesh_data[key] = f[key][()]
+            return mesh_data
+
+        if groups:
+            grouped_mesh_data = {}
+            for group in groups:
+                grouped_mesh_data[group] = {
+                    key: f[group][key][()] for key in f[group].keys()
+                }
+            return grouped_mesh_data
+
     return mesh_data
+
+
+def iter_mesh_entries(mesh_data: dict):
+    """Yield individual mesh entries from the loaded HDF5 content.
+
+    Parameters
+    ----------
+    mesh_data : dict
+        Output of :func:`load_mesh_from_hdf5`.
+
+    Yields
+    ------
+    tuple[Optional[str], dict]
+        Pairs of ``(group_name, mesh_dict)``. ``group_name`` is ``None`` when
+        the data corresponds to a single mesh stored at the root of the file.
+    """
+
+    if not isinstance(mesh_data, dict):
+        raise TypeError("mesh_data must be a dictionary returned by load_mesh_from_hdf5")
+
+    if "points" in mesh_data and isinstance(mesh_data["points"], np.ndarray):
+        yield None, mesh_data
+        return
+
+    for group_name, group_data in mesh_data.items():
+        yield group_name, group_data
 
 
 def store_point_and_vectors_in_vtp(

@@ -23,6 +23,7 @@ def meshes_for_folder_structure(
     imod_meshing=False,
     pymeshlab_meshing=False,
     max_segmentations: Optional[int] = None,
+    merge_outputs: bool = False,
 ):
     """
     This assumes the following folder structure:
@@ -113,7 +114,8 @@ def meshes_for_folder_structure(
             min_connected_size=min_connected_size,
             imod_meshing=imod_meshing,
             pymeshlab_meshing=pymeshlab_meshing,
-            max_segmentations=max_segmentations,
+                max_segmentations=max_segmentations,
+                merge_outputs=merge_outputs,
         )
 
 
@@ -135,6 +137,7 @@ def mesh_for_tomo_mb_folder(
     imod_meshing=False,
     pymeshlab_meshing=False,
     max_segmentations: Optional[int] = None,
+    merge_outputs: bool = False,
 ):
     """
     This function assumes the following folder structure:
@@ -194,6 +197,7 @@ def mesh_for_tomo_mb_folder(
             imod_meshing=imod_meshing,
             pymeshlab_meshing=pymeshlab_meshing,
             max_segmentations=max_segmentations,
+            merge_outputs=merge_outputs,
         )
 
 
@@ -215,6 +219,7 @@ def mesh_for_single_mb_file(
     imod_meshing=False,
     pymeshlab_meshing=False,
     max_segmentations: Optional[int] = None,
+    merge_outputs: bool = False,
 ):
     """ """
     os.makedirs(out_folder, exist_ok=True)
@@ -252,4 +257,5 @@ def mesh_for_single_mb_file(
         imod_meshing=imod_meshing,
         pymeshlab_meshing=pymeshlab_meshing,
         max_segmentations=max_segmentations,
+        merge_outputs=merge_outputs,
     )
