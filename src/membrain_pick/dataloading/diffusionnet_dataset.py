@@ -15,6 +15,7 @@ from membrain_pick.dataloading.mesh_partitioning import (
     compute_nearest_distances,
 )
 from membrain_pick.dataloading.data_utils import (
+    iter_mesh_entries,
     load_mesh_from_hdf5,
     convert_to_torch,
     read_star_file,
@@ -290,69 +291,74 @@ class MemSegDiffusionNetDataset(Dataset):
             hdf5_path = entry[0]
             gt_path = entry[1]
 
-            mesh_data = load_mesh_from_hdf5(hdf5_path)
-            points = mesh_data["points"]
-            faces = mesh_data["faces"]
-            vert_normals = mesh_data["normals"]
-            normal_values = mesh_data["normal_values"]
-            tomo_file = (
-                "" if not "tomo_file" in mesh_data.keys() else mesh_data["tomo_file"]
-            )
+            mesh_container = load_mesh_from_hdf5(hdf5_path)
+            for _, mesh_data in iter_mesh_entries(mesh_container):
+                points = mesh_data["points"]
+                faces = mesh_data["faces"]
+                vert_normals = mesh_data["normals"]
+                normal_values = mesh_data["normal_values"]
+                tomo_file = (
+                    "" if not "tomo_file" in mesh_data.keys() else mesh_data["tomo_file"]
+                )
 
-            points = np.concatenate([points, normal_values], axis=1)
-            if os.path.isfile(gt_path):
-                gt_data = read_star_file(gt_path)  # pandas dataframe
-                # check size of gt_data
-                if gt_data.shape[0] == 0:
+                points = np.concatenate([points, normal_values], axis=1)
+                if os.path.isfile(gt_path):
+                    gt_data = read_star_file(gt_path)  # pandas dataframe
+                    # check size of gt_data
+                    if gt_data.shape[0] == 0:
+                        gt_pos = np.zeros((1, 3))
+                        gt_classes = np.ones(1) * -1
+                    else:
+                        gt_pos = gt_data[
+                            ["rlnCoordinateX", "rlnCoordinateY", "rlnCoordinateZ"]
+                        ].values
+                        assert (
+                            "rlnCoordinateX" in gt_data.columns
+                        ), "rlnCoordinateX not in columns"
+                        if "rlnClassNumber" in gt_data.columns:
+                            gt_classes = gt_data["rlnClassNumber"].values
+                        else:
+                            gt_classes = np.ones(gt_pos.shape[0])
+                        gt_pos = project_points_to_nearest_hyperplane(
+                            gt_pos, points[:, :3]
+                        )
+                else:
                     gt_pos = np.zeros((1, 3))
                     gt_classes = np.ones(1) * -1
-                else:
-                    gt_pos = gt_data[
-                        ["rlnCoordinateX", "rlnCoordinateY", "rlnCoordinateZ"]
-                    ].values
-                    assert (
-                        "rlnCoordinateX" in gt_data.columns
-                    ), "rlnCoordinateX not in columns"
-                    if "rlnClassNumber" in gt_data.columns:
-                        gt_classes = gt_data["rlnClassNumber"].values
-                    else:
-                        gt_classes = np.ones(gt_pos.shape[0])
-                    gt_pos = project_points_to_nearest_hyperplane(gt_pos, points[:, :3])
-            else:
-                gt_pos = np.zeros((1, 3))
-                gt_classes = np.ones(1) * -1
 
-            gt_mask = self._get_GT_mask(gt_pos, gt_classes)
-            gt_pos = gt_pos[gt_mask]
+                gt_mask = self._get_GT_mask(gt_pos, gt_classes)
+                gt_pos = gt_pos[gt_mask]
 
-            points = points * self.input_pixel_size / self.process_pixel_size
-            gt_pos = gt_pos * self.input_pixel_size / self.process_pixel_size
+                points = points * self.input_pixel_size / self.process_pixel_size
+                gt_pos = gt_pos * self.input_pixel_size / self.process_pixel_size
 
-            distances, nn_idcs = compute_nearest_distances(points[:, :3], gt_pos)
+                distances, nn_idcs = compute_nearest_distances(points[:, :3], gt_pos)
 
-            # Move GT along nearest normal
-            _, nn_idcs_psii = compute_nearest_distances(gt_pos, points[:, :3])
-            psii_normals = vert_normals[nn_idcs_psii]
+                # Move GT along nearest normal
+                _, nn_idcs_psii = compute_nearest_distances(gt_pos, points[:, :3])
+                psii_normals = vert_normals[nn_idcs_psii]
 
-            nearest_PSII_pos = gt_pos[nn_idcs] + psii_normals[nn_idcs] * 20
-            connection_vectors = nearest_PSII_pos - (points[:, :3])
+                nearest_PSII_pos = gt_pos[nn_idcs] + psii_normals[nn_idcs] * 20
+                connection_vectors = nearest_PSII_pos - (points[:, :3])
 
-            angle_to_normal = np.einsum("ij,ij->i", connection_vectors, vert_normals)
-            mask = angle_to_normal < 0
+                angle_to_normal = np.einsum("ij,ij->i", connection_vectors, vert_normals)
+                mask = angle_to_normal < 0
 
-            distances[distances > 10] = 10
-            distances[mask] = 10.05
-            points[:, :3] /= self.max_tomo_shape
-            points[:, :3] *= self.process_pixel_size
-            gt_pos /= self.max_tomo_shape
-            gt_pos *= self.process_pixel_size
+                distances[distances > 10] = 10
+                distances[mask] = 10.05
+                points[:, :3] /= self.max_tomo_shape
+                points[:, :3] *= self.process_pixel_size
+                gt_pos /= self.max_tomo_shape
+                gt_pos *= self.process_pixel_size
 
-            self.membranes.append(points)
-            self.labels.append(distances)
-            self.faces.append(faces)
-            self.vert_normals.append(vert_normals)
-            self.gt_pos.append(gt_pos)
-            self.tomo_files.append(tomo_file)
+                self.membranes.append(points)
+                self.labels.append(distances)
+                self.faces.append(faces)
+                self.vert_normals.append(vert_normals)
+                self.gt_pos.append(gt_pos)
+                self.tomo_files.append(tomo_file)
+                if self.overfit:
+                    break
             if self.overfit:
                 break
 

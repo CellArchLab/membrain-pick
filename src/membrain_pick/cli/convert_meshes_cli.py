@@ -52,6 +52,13 @@ def convert_single_file(
             "Leave empty or set to None to export all available segmentations."
         ),
     ),
+    merge_outputs: bool = Option(  # noqa: B008
+        False,
+        help=(
+            "Store all exported connected components in a single set of output "
+            "files (one H5/OBJ pair)."
+        ),
+    ),
 ):
     """Convert a single membrane segmentation to a mesh.
 
@@ -77,6 +84,7 @@ def convert_single_file(
         imod_meshing=imod_meshing,
         pymeshlab_meshing=pymeshlab_meshing,
         max_segmentations=max_segmentations,
+        merge_outputs=merge_outputs,
     )
 
 
@@ -124,6 +132,13 @@ def convert_mb_folder(
             "Leave empty or set to None to export all available segmentations."
         ),
     ),
+    merge_outputs: bool = Option(  # noqa: B008
+        False,
+        help=(
+            "Store all exported connected components in a single set of output "
+            "files (one H5/OBJ pair) per segmentation."
+        ),
+    ),
 ):
     """Convert a folder of membrane segmentations to meshes.
 
@@ -147,4 +162,5 @@ def convert_mb_folder(
         imod_meshing=imod_meshing,
         pymeshlab_meshing=pymeshlab_meshing,
         max_segmentations=max_segmentations,
+        merge_outputs=merge_outputs,
     )
