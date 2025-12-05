@@ -11,6 +11,7 @@ The workflow of MemBrain-pick is as follows:
 3. **Ground Truth Generation**: The membrane mesh can be loaded into **surforama** to manually annotate membrane-associated particles. These annotations can then be used to train a MemBrain-pick model.
 4. **Training**: The generated meshes, along with the annotations, are used to train a model that can predict the location of membrane-associated particles.
 5. **Prediction**: The trained model is used to predict the location of membrane-associated particles in the membrane segmentations.
+6. **(Optional) Subtomogram averaging**: The predicted particle locations and initial orientations can be used for subtomogram averaging. Here, we explain how to import them into RELION for this purpose.
 
 ## Example notebook
 For a quick start, you can walk through our example notebook. You can easily run it on Google Colab by clicking on the badge below:
@@ -32,6 +33,7 @@ For a quick start, you can walk through our example notebook. You can easily run
 - [Prediction](docs/Prediction.md)
 - [Angle Assignment](docs/Angle_Assignment.md)
 - [Visualization in Surforama](docs/Surforama_Inspection.md)
+- [Importing into RELION-5](docs/Relion_Import.md)
 
 
 MemBrain-pick is part of the MemBrain v2 [1] package and still under early development. If you have any questions or suggestions, please contact us at lorenz.lamm@helmholtz-munich.de
