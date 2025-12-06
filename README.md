@@ -4,6 +4,15 @@
 **Membrain-Pick** is part of the **MemBrain** suite of tools for processing membranes in cryo-electron tomography. MemBrain-pick's main purpose is to localize membrane-associated particles in the tomograms.
 To this end, MemBrain-picks takes as input already existing membrane segmentations and processes these to limit the search space for membrane-associated particles. The output of MemBrain-pick is a set of coordinates that can be used for further analysis.
 
+### Use case
+MemBrain-pick is most powerfully used when training data is still limited or still needs to be generated. By leveraging membrane segmentations, MemBrain-pick can focus the search for particles to the membrane vicinity, reducing the amount of data needed for training. 
+
+The inherently used data representation corresponds to the one also used in **surforama** , allowing for seamless integration between both tools. MemBrain-pick can be used to generate training data for membrane-associated particles, which can then be manually annotated in surforama. The trained model can then be used to predict particle locations in new tomograms.
+
+MemBrain-pick is therefore also limited by what is visible in the surforama interface. For instance, if particles are not clearly visible in surforama, MemBrain-pick will also struggle to localize them. It cannot recover structures that are not visible to a human annotator
+A general recommendation is therefore to first inspect the membrane segmentations in surforama before training a first model.
+
+
 ## Workflow
 The workflow of MemBrain-pick is as follows:
 1. **Input**: Membrane segmentations in the form of a binary mask (.mrc). Ideally, these segmentations should depict single membrane instances.
@@ -36,7 +45,7 @@ For a quick start, you can walk through our example notebook. You can easily run
 - [Importing into RELION-5](docs/Relion_Import.md)
 
 
-MemBrain-pick is part of the MemBrain v2 [1] package and still under early development. If you have any questions or suggestions, please contact us at lorenz.lamm@helmholtz-munich.de
+MemBrain-pick is part of the MemBrain v2 [1] package and still under early development. If you have any questions or suggestions, please raise an issue on GitHub or contact the authors.
 
 ```
 [1] Lamm, L., Zufferey, S., Righetto, R.D., Wietrzynski, W., Yamauchi, K.A., Burt, A., Liu, Y., Zhang, H., Martinez-Sanchez, A., Ziegler, S., Isensee, F., Schnabel, J.A., Engel, B.D., and Peng, T, 2024. MemBrain v2: an end-to-end tool for the analysis of membranes in cryo-electron tomography. bioRxiv, https://doi.org/10.1101/2024.01.05.574336
